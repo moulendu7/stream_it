@@ -286,4 +286,145 @@ export class ParticipantService {
   ): Promise<void> {
     await redis.hdel(redisKeys.pending(roomId), participantId);
   }
+  private static mapParticipant(data: Record<string, string>): Participant {
+    return {
+      id: data.id,
+      name: data.name,
+      isHost: data.isHost === "1",
+      joinedAt: Number(data.joinedAt),
+      status: data.status as Participant["status"],
+    };
+  }
+  static async getParticipants(
+    roomId: string,
+  ): Promise<ServiceResult<Participant[]>> {
+    const room = await RoomService.getRoom(roomId);
+
+    if (!room.success) {
+      return {
+        success: false,
+        error: "Room not found",
+      };
+    }
+
+    const ids = await redis.hkeys(redisKeys.participants(roomId));
+
+    const participants: Participant[] = [];
+
+    for (const id of ids) {
+      const participant = await this.getParticipant(id);
+
+      if (participant) {
+        participants.push(participant);
+      }
+    }
+
+    participants.sort((a, b) => a.joinedAt - b.joinedAt);
+
+    return {
+      success: true,
+      data: participants,
+    };
+  }
+
+  static async getPendingParticipants(
+    roomId: string,
+  ): Promise<ServiceResult<Participant[]>> {
+    const room = await RoomService.getRoom(roomId);
+
+    if (!room.success) {
+      return {
+        success: false,
+        error: "Room not found",
+      };
+    }
+
+    const ids = await redis.hkeys(redisKeys.pending(roomId));
+
+    const participants: Participant[] = [];
+
+    for (const id of ids) {
+      const participant = await this.getParticipant(id);
+
+      if (participant) {
+        participants.push(participant);
+      }
+    }
+
+    participants.sort((a, b) => a.joinedAt - b.joinedAt);
+
+    return {
+      success: true,
+      data: participants,
+    };
+  }
+
+  private static async transferHost(roomId: string): Promise<void> {
+    const participants = await this.getParticipants(roomId);
+
+    if (!participants.success || !participants.data) {
+      return;
+    }
+
+    if (participants.data.length === 0) {
+      await RoomService.endRoom(roomId);
+      return;
+    }
+
+    const nextHost = participants.data[0];
+
+    nextHost.isHost = true;
+
+    await this.saveParticipant(nextHost);
+
+    await redis.set(redisKeys.host(roomId), nextHost.id);
+  }
+
+  static async leaveRoom(
+    roomId: string,
+    participantId: string,
+  ): Promise<ServiceResult<null>> {
+    const room = await RoomService.getRoom(roomId);
+
+    if (!room.success) {
+      return {
+        success: false,
+        error: "Room not found",
+      };
+    }
+
+    const participant = await this.getParticipant(participantId);
+
+    if (!participant) {
+      return {
+        success: false,
+        error: "Participant not found",
+      };
+    }
+
+    if (participant.status === "pending") {
+      await this.removeFromPending(roomId, participantId);
+
+      await this.deleteParticipant(participantId);
+
+      return {
+        success: true,
+        data: null,
+      };
+    }
+
+    await this.removeFromParticipants(roomId, participantId);
+
+    await this.deleteParticipant(participantId);
+
+    if (participant.isHost) {
+      await this.transferHost(roomId);
+    }
+
+    return {
+      success: true,
+      data: null,
+    };
+  }
+  
 }
