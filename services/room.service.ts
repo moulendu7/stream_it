@@ -3,12 +3,11 @@ import { env } from "@/lib/env";
 import { redisKeys } from "@/constants/redis";
 import { Room } from "@/types/room";
 import { ServiceResult } from "@/types/service";
-import crypto from "crypto";
+import { generateRoomId } from "@/utils/generateRoomId";
 
 export class RoomService {
   static async createRoom(): Promise<ServiceResult<Room>> {
-    const id = crypto.randomBytes(4).toString("hex").toUpperCase();
-
+    const id = await generateRoomId();
     const now = Date.now();
 
     const room: Room = {
@@ -39,7 +38,7 @@ export class RoomService {
       },
       {
         ex: ttl,
-      }
+      },
     );
 
     return {
