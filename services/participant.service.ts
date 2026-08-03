@@ -35,10 +35,7 @@ export class ParticipantService {
     };
 
     await this.saveParticipant(hostParticipant);
-
-    await redis.hset(redisKeys.participants(roomId), {
-      [hostParticipant.id]: "1",
-    });
+    await this.addToParticipants(roomId, hostParticipant.id);
 
     await redis.set(redisKeys.host(roomId), hostParticipant.id);
 
@@ -113,10 +110,7 @@ export class ParticipantService {
     };
 
     await this.saveParticipant(pendingParticipant);
-
-    await redis.hset(redisKeys.pending(roomId), {
-      [pendingParticipant.id]: "1",
-    });
+    await this.addToPending(roomId, pendingParticipant.id);
 
     return {
       success: true,
@@ -169,9 +163,9 @@ export class ParticipantService {
       };
     }
 
-    const count = await redis.hlen(redisKeys.participants(roomId));
+    const participantCount = await redis.hlen(redisKeys.participants(roomId));
 
-    if (count >= settings.maxParticipants) {
+    if (participantCount >= settings.maxParticipants) {
       return {
         success: false,
         error: "Room is full",
@@ -182,11 +176,9 @@ export class ParticipantService {
 
     await this.saveParticipant(participant);
 
-    await redis.hdel(redisKeys.pending(roomId), participantId);
+    await this.removeFromPending(roomId, participantId);
 
-    await redis.hset(redisKeys.participants(roomId), {
-      [participant.id]: "1",
-    });
+    await this.addToParticipants(roomId, participant.id);
 
     return {
       success: true,
@@ -219,9 +211,9 @@ export class ParticipantService {
       };
     }
 
-    await redis.hdel(redisKeys.pending(roomId), participantId);
+    await this.removeFromPending(roomId, participantId);
 
-    await redis.del(redisKeys.participant(participantId));
+    await this.deleteParticipant(participantId);
 
     return {
       success: true,
@@ -246,7 +238,7 @@ export class ParticipantService {
   ): Promise<Participant | null> {
     const data = await redis.hgetall(redisKeys.participant(participantId));
 
-    if (Object.keys(data).length === 0) {
+    if (!data || Object.keys(data).length === 0) {
       return null;
     }
 
@@ -257,5 +249,41 @@ export class ParticipantService {
       joinedAt: Number(data.joinedAt),
       status: data.status as Participant["status"],
     };
+  }
+
+  private static async deleteParticipant(participantId: string): Promise<void> {
+    await redis.del(redisKeys.participant(participantId));
+  }
+
+  private static async addToParticipants(
+    roomId: string,
+    participantId: string,
+  ): Promise<void> {
+    await redis.hset(redisKeys.participants(roomId), {
+      [participantId]: "1",
+    });
+  }
+
+  private static async removeFromParticipants(
+    roomId: string,
+    participantId: string,
+  ): Promise<void> {
+    await redis.hdel(redisKeys.participants(roomId), participantId);
+  }
+
+  private static async addToPending(
+    roomId: string,
+    participantId: string,
+  ): Promise<void> {
+    await redis.hset(redisKeys.pending(roomId), {
+      [participantId]: "1",
+    });
+  }
+
+  private static async removeFromPending(
+    roomId: string,
+    participantId: string,
+  ): Promise<void> {
+    await redis.hdel(redisKeys.pending(roomId), participantId);
   }
 }
