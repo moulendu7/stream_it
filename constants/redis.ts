@@ -1,15 +1,17 @@
 export const redisKeys = {
-  room: (id: string) => `room:${id}`,
+    room: (id: string) => `room:${id}`,
 
-  participants: (id: string) => `room:${id}:participants`,
+    participants: (id: string) => `room:${id}:participants`,
 
-  pending: (id: string) => `room:${id}:pending`,
+    pending: (id: string) => `room:${id}:pending`,
 
-  host: (id: string) => `room:${id}:host`,
+    host: (id: string) => `room:${id}:host`,
 
-  screenShare: (id: string) => `room:${id}:screenshare`,
+    screenShare: (id: string) => `room:${id}:screenshare`,
 
-  settings: (id: string) => `room:${id}:settings`,
+    settings: (id: string) => `room:${id}:settings`,
 
-  chat: (id: string) => `room:${id}:chat`,
+    chat: (id: string) => `room:${id}:chat`,
+
+    participant: (id: string) => `participant:${id}`,
 };

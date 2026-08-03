@@ -1,6 +1,7 @@
 export interface Participant {
-  id: string;
-  name: string;
-  isHost: boolean;
-  joinedAt: number;
+    id: string;
+    name: string;
+    isHost: boolean;
+    joinedAt: number;
+    status: "pending" | "joined";
 }
