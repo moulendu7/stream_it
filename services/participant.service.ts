@@ -426,5 +426,21 @@ export class ParticipantService {
       data: null,
     };
   }
-  
+  static async findParticipant(
+    participantId: string,
+  ): Promise<ServiceResult<Participant>> {
+    const participant = await this.getParticipant(participantId);
+
+    if (!participant) {
+      return {
+        success: false,
+        error: "Participant not found",
+      };
+    }
+
+    return {
+      success: true,
+      data: participant,
+    };
+  }
 }
