@@ -1,7 +1,7 @@
 export interface Participant {
     id: string;
     name: string;
-    isHost: boolean;
+    role: "host" | "participant";
     status: "pending" | "joined";
     joinedAt: number;
     livekitIdentity: string;

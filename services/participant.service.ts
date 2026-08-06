@@ -3,11 +3,13 @@ import { redisKeys } from "@/constants/redis";
 import { Participant } from "@/types/participant";
 import { ServiceResult } from "@/types/service";
 import { RoomService } from "./room.service";
+import { ParticipantRedis } from "@/types/redis";
+import { randomUUID } from "crypto";
 
 export class ParticipantService {
   static async joinAsHost(
     roomId: string,
-    participant: Participant,
+    hostName: string,
   ): Promise<ServiceResult<Participant>> {
     const room = await RoomService.getRoom(roomId);
 
@@ -27,27 +29,29 @@ export class ParticipantService {
       };
     }
 
-    const hostParticipant: Participant = {
-      ...participant,
-      isHost: true,
+    const participant: Participant = {
+      id: randomUUID(),
+      livekitIdentity: randomUUID(),
+      name: hostName,
+      role: "host",
       status: "joined",
       joinedAt: Date.now(),
     };
 
-    await this.saveParticipant(hostParticipant);
-    await this.addToParticipants(roomId, hostParticipant.id);
+    await this.saveParticipant(participant);
+    await this.addToParticipants(roomId, participant.id);
 
-    await redis.set(redisKeys.host(roomId), hostParticipant.id);
+    await redis.set(redisKeys.host(roomId), participant.id);
 
     return {
       success: true,
-      data: hostParticipant,
+      data: participant,
     };
   }
 
   static async requestJoin(
     roomId: string,
-    participant: Participant,
+    participantName: string,
   ): Promise<ServiceResult<Participant>> {
     const room = await RoomService.getRoom(roomId);
 
@@ -57,6 +61,14 @@ export class ParticipantService {
         error: "Room not found",
       };
     }
+    const participant: Participant = {
+      id: randomUUID(),
+      livekitIdentity: randomUUID(),
+      name: participantName,
+      role: "participant",
+      status: "pending",
+      joinedAt: Date.now(),
+    };
 
     const settings = await redis.get<{ maxParticipants: number }>(
       redisKeys.settings(roomId),
@@ -102,19 +114,13 @@ export class ParticipantService {
       };
     }
 
-    const pendingParticipant: Participant = {
-      ...participant,
-      isHost: false,
-      status: "pending",
-      joinedAt: Date.now(),
-    };
 
-    await this.saveParticipant(pendingParticipant);
-    await this.addToPending(roomId, pendingParticipant.id);
+    await this.saveParticipant(participant);
+    await this.addToPending(roomId, participant.id);
 
     return {
       success: true,
-      data: pendingParticipant,
+      data: participant,
     };
   }
 
@@ -227,28 +233,24 @@ export class ParticipantService {
     await redis.hset(redisKeys.participant(participant.id), {
       id: participant.id,
       name: participant.name,
-      isHost: participant.isHost ? "1" : "0",
-      joinedAt: participant.joinedAt.toString(),
+      role: participant.role,
       status: participant.status,
+      joinedAt: participant.joinedAt.toString(),
+      livekitIdentity: participant.livekitIdentity,
     });
   }
 
   private static async getParticipant(
     participantId: string,
   ): Promise<Participant | null> {
-    const data = await redis.hgetall(redisKeys.participant(participantId));
+    const data = await redis.hgetall<ParticipantRedis>(
+      redisKeys.participant(participantId),
+    );
 
     if (!data || Object.keys(data).length === 0) {
       return null;
     }
-
-    return {
-      id: data.id,
-      name: data.name,
-      isHost: data.isHost === "1",
-      joinedAt: Number(data.joinedAt),
-      status: data.status as Participant["status"],
-    };
+    return this.mapParticipant(data);
   }
 
   private static async deleteParticipant(participantId: string): Promise<void> {
@@ -286,13 +288,14 @@ export class ParticipantService {
   ): Promise<void> {
     await redis.hdel(redisKeys.pending(roomId), participantId);
   }
-  private static mapParticipant(data: Record<string, string>): Participant {
+  private static mapParticipant(data: ParticipantRedis): Participant {
     return {
       id: data.id,
       name: data.name,
-      isHost: data.isHost === "1",
-      joinedAt: Number(data.joinedAt),
+      role: data.role as Participant["role"],
       status: data.status as Participant["status"],
+      joinedAt: Number(data.joinedAt),
+      livekitIdentity: data.livekitIdentity,
     };
   }
   static async getParticipants(
@@ -373,7 +376,7 @@ export class ParticipantService {
 
     const nextHost = participants.data[0];
 
-    nextHost.isHost = true;
+    nextHost.role = "host";
 
     await this.saveParticipant(nextHost);
 
@@ -417,7 +420,7 @@ export class ParticipantService {
 
     await this.deleteParticipant(participantId);
 
-    if (participant.isHost) {
+    if (participant.role === "host") {
       await this.transferHost(roomId);
     }
 
