@@ -18,15 +18,13 @@ export class RoomService {
     };
 
     const ttl = env.roomTTL;
-
-    await redis.set(redisKeys.room(id), room, {
+    await redis.set(redisKeys.room(room.id), room, {
       ex: ttl,
     });
 
     await redis.set(redisKeys.host(id), "", {
       ex: ttl,
     });
-
     await redis.set(redisKeys.screenShare(id), "", {
       ex: ttl,
     });

@@ -41,8 +41,10 @@ export class ParticipantService {
 
     await this.saveParticipant(participant);
     await this.addToParticipants(roomId, participant.id);
-
-    await redis.set(redisKeys.host(roomId), participant.id);
+    
+    await redis.set(redisKeys.host(roomId), participant.id, {
+      ex: env.roomTTL,
+    });
 
     return {
       success: true,
@@ -264,9 +266,12 @@ export class ParticipantService {
     roomId: string,
     participantId: string,
   ): Promise<void> {
-    await redis.hset(redisKeys.participants(roomId), {
+    const key = redisKeys.participants(roomId);
+    await redis.hset(key, {
       [participantId]: "1",
     });
+
+    await redis.expire(key, env.roomTTL);
   }
 
   private static async removeFromParticipants(
@@ -280,9 +285,11 @@ export class ParticipantService {
     roomId: string,
     participantId: string,
   ): Promise<void> {
-    await redis.hset(redisKeys.pending(roomId), {
+    const key = redisKeys.pending(roomId);
+    await redis.hset(key, {
       [participantId]: "1",
     });
+    await redis.expire(key, env.roomTTL);
   }
 
   private static async removeFromPending(
