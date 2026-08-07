@@ -8,7 +8,7 @@ const NameSchema = z
 
 const RoomIdSchema = z.string().trim().length(8, "Invalid room id.");
 
-const ParticipantIdSchema = z.string().regex(/^p_[A-Z0-9]{8}$/);
+const ParticipantIdSchema = z.string().uuid("Invalid participant id.");
 
 export const JoinRoomSchema = z.object({
   roomId: RoomIdSchema,

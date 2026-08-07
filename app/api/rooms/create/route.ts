@@ -7,8 +7,6 @@ import { CreateRoomSchema } from "@/lib/validations";
 
 import { successResponse, errorResponse } from "@/lib/api-response";
 
-import { randomUUID } from "crypto";
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -26,9 +24,9 @@ export async function POST(request: NextRequest) {
     }
 
     const participant = await ParticipantService.joinAsHost(
-  room.data.id,
-  parsed.data.hostName,
-);
+      room.data.id,
+      parsed.data.hostName,
+    );
 
     if (!participant.success || !participant.data) {
       await RoomService.endRoom(room.data.id);
