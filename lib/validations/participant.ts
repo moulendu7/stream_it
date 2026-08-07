@@ -12,7 +12,6 @@ const ParticipantIdSchema = z.string().regex(/^p_[A-Z0-9]{8}$/);
 
 export const JoinRoomSchema = z.object({
   roomId: RoomIdSchema,
-  participantId: ParticipantIdSchema,
   name: NameSchema,
 });
 
