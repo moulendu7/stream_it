@@ -5,6 +5,7 @@ import { ServiceResult } from "@/types/service";
 import { RoomService } from "./room.service";
 import { ParticipantRedis } from "@/types/redis";
 import { randomUUID } from "crypto";
+import { env } from "@/lib/env";
 
 export class ParticipantService {
   static async joinAsHost(
@@ -113,7 +114,6 @@ export class ParticipantService {
         error: "Already waiting",
       };
     }
-
 
     await this.saveParticipant(participant);
     await this.addToPending(roomId, participant.id);
@@ -230,14 +230,17 @@ export class ParticipantService {
   private static async saveParticipant(
     participant: Participant,
   ): Promise<void> {
-    await redis.hset(redisKeys.participant(participant.id), {
+    const key = redisKeys.participant(participant.id);
+
+    await redis.hset(key, {
       id: participant.id,
       name: participant.name,
       role: participant.role,
-      status: participant.status,
       joinedAt: participant.joinedAt.toString(),
+      status: participant.status,
       livekitIdentity: participant.livekitIdentity,
     });
+    await redis.expire(key, env.roomTTL);
   }
 
   private static async getParticipant(
