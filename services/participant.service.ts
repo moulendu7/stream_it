@@ -41,7 +41,7 @@ export class ParticipantService {
 
     await this.saveParticipant(participant);
     await this.addToParticipants(roomId, participant.id);
-    
+
     await redis.set(redisKeys.host(roomId), participant.id, {
       ex: env.roomTTL,
     });
@@ -245,7 +245,7 @@ export class ParticipantService {
     await redis.expire(key, env.roomTTL);
   }
 
-  private static async getParticipant(
+  static async getParticipant(
     participantId: string,
   ): Promise<Participant | null> {
     const data = await redis.hgetall<ParticipantRedis>(

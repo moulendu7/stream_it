@@ -1,8 +1,12 @@
 import { z } from "zod";
 
-export const GenerateTokenSchema = z.object({
-  roomId: z.string().trim().length(8),
-  participantId: z.string().trim().min(1),
+const RoomIdSchema = z.string().trim().length(8, "Invalid room id.");
+
+const ParticipantIdSchema = z.string().uuid("Invalid participant id.");
+
+export const LiveKitTokenSchema = z.object({
+  roomId: RoomIdSchema,
+  participantId: ParticipantIdSchema,
 });
 
-export type GenerateTokenInput = z.infer<typeof GenerateTokenSchema>;
+export type LiveKitTokenInput = z.infer<typeof LiveKitTokenSchema>;
