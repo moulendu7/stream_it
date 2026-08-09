@@ -456,4 +456,12 @@ export class ParticipantService {
       data: participant,
     };
   }
+  static async isParticipantInRoom(
+    roomId: string,
+    participantId: string,
+  ): Promise<boolean> {
+    return (
+      (await redis.hexists(redisKeys.participants(roomId), participantId)) === 1
+    );
+  }
 }
