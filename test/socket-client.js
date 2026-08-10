@@ -8,8 +8,8 @@ socket.on("connect", () => {
   console.log("Connected:", socket.id);
 
   socket.emit("join-room", {
-    roomId: "NCXHQ7KE",
-    participantId: "ba819ac0-0945-4b62-b84a-70e9299c9603",
+    roomId: "J6FAADDA",
+    participantId: "2449367b-dfd9-4585-a533-4698aa1c5043",
   });
 });
 
@@ -24,7 +24,9 @@ socket.on("socket-error", (data) => {
 socket.on("connect_error", (error) => {
   console.log("Connection error:", error.message);
 });
-
+socket.on("participant-left", (data) => {
+  console.log("Participant left:", data);
+});
 socket.on("disconnect", (reason) => {
   console.log("Disconnected:", reason);
 });

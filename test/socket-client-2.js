@@ -8,8 +8,8 @@ socket.on("connect", () => {
   console.log("Client 2 connected:", socket.id);
 
   socket.emit("join-room", {
-    roomId: "NCXHQ7KE",
-    participantId: "cc0bd2c8-ce92-4f7c-bfd5-fda332dbd6fe",
+    roomId: "J6FAADDA",
+    participantId: "7eabe05c-530e-452a-ba66-362654e3cb4a",
   });
 });
 
