@@ -5,11 +5,11 @@ const socket = io("http://localhost:4000", {
 });
 
 socket.on("connect", () => {
-  console.log("Connected:", socket.id);
+  console.log("Client 2 connected:", socket.id);
 
   socket.emit("join-room", {
     roomId: "NCXHQ7KE",
-    participantId: "ba819ac0-0945-4b62-b84a-70e9299c9603",
+    participantId: "cc0bd2c8-ce92-4f7c-bfd5-fda332dbd6fe",
   });
 });
 
@@ -23,8 +23,4 @@ socket.on("socket-error", (data) => {
 
 socket.on("connect_error", (error) => {
   console.log("Connection error:", error.message);
-});
-
-socket.on("disconnect", (reason) => {
-  console.log("Disconnected:", reason);
 });
